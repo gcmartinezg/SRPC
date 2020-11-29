@@ -1,7 +1,3 @@
-import cv2
-from pathlib import Path
-import moviepy.editor
-import os
 
 path = 'video/static/uploads/'
 path_to_uploaded_file = path + 'fileupload'
@@ -28,6 +24,7 @@ def save_uploaded_file(f):
             
 # Opens the Video file
 def extract_frames(f):
+    import cv2
     cap=cv2.VideoCapture(path_to_uploaded_file + f.name)
     i=0
     while(cap.isOpened()):
@@ -48,6 +45,8 @@ def get_filename(f):
         return ''
 
 def validate_video(f):
+    import moviepy.editor
+    from pathlib import Path
     path = path_to_uploaded_file + f.name
     video = moviepy.editor.VideoFileClip(path)
     video_duration_sec = int(video.duration)
@@ -65,4 +64,13 @@ def validate_video(f):
     return True
 
 def remove_file(f):
+    import os
     os.remove(path_to_uploaded_file+f.name)
+
+def validate_file_extension(value):
+    import os
+    from django.core.exceptions import ValidationError
+    ext = os.path.splitext(value.name)[1]  # [0] returns path+filename
+    valid_extensions = ['.mp4', '.mkv', '.avi']
+    if not ext.lower() in valid_extensions:
+        raise ValidationError('Unsupported file extension.')
