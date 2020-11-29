@@ -3,7 +3,7 @@ path = 'video/static/uploads/'
 path_to_uploaded_file = path + 'fileupload'
 path_to_frames = path + 'frames/'
 
-#TODO document functions
+#TODO document functions 
 def handle_uploaded_file(f):
     save_uploaded_file(f)
     try:

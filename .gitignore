@@ -1,3 +1,5 @@
 .history/
 .DS_Store
 video/static/uploads/*
+__pycache__/
+*.pyc
