@@ -74,3 +74,15 @@ def validate_file_extension(value):
     valid_extensions = ['.mp4', '.mkv', '.avi']
     if not ext.lower() in valid_extensions:
         raise ValidationError('Unsupported file extension.')
+
+def edsr_model(image):
+    import cv2
+    from cv2 import dnn_superres
+    sr = dnn_superres.DnnSuperResImpl_create()
+    path = 'video/static/models/EDSR_x3.pb'# ... /path/to/EDSR_x3.pb
+    sr.readModel(path)
+    sr.setModel("edsr", 3)
+    result = sr.upsample(image)
+    cv2.imwrite('path', result)# falta guardar en una ruta diferente a la de los frames 
+    
+
