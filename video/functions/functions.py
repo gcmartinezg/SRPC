@@ -110,7 +110,18 @@ def pick_frames(name):
     
     return picked_frames
 
-def get_plate(image_path):
+def get_plate_openalpr(image_name):
+    import subprocess
+    cmd = ['docker', 'run', '-i', '--rm', '-v', path_to_frames+":/data:ro", 'openalpr', '-c',
+           'eu', image_name]
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    lines = b''
+    for line in p.stdout.readlines():
+        lines = lines + line
+    retval = p.wait()
+    print(lines.decode('utf-8').strip())
+
+def get_plate_platerecognizer(image_path):
     import requests
     from pprint import pprint
 
