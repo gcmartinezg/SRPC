@@ -1,5 +1,7 @@
 .history/
 .DS_Store
-video/static/uploads/*
+video/static/uploads/frames/*
+!video/static/uploads/frames/processed/.keep
+!video/static/uploads/frames/raw/.keep
 __pycache__/
 *.pyc
