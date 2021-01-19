@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseBadRequest
 from video.forms import upload
-from video.functions.functions import handle_uploaded_file, extract_frames
+from video.functions.functions import handle_uploaded_file, extract_frames, apply_superresolution
 
 # Create your views here.
 def formsubmission(request):
@@ -16,8 +16,8 @@ def formsubmission(request):
                 return HttpResponseBadRequest(str(err))
 
             extract_frames(uploaded_file)
+            apply_superresolution(uploaded_file.name)
             return HttpResponse("Archivo cargado exitosamente!")
         else:
             form = upload()
     return render(request, 'video/home.html', {'form': form})
-

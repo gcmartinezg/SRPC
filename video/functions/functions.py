@@ -1,6 +1,8 @@
 path = 'video/static/uploads/'
 path_to_uploaded_file = path + 'fileupload'
 path_to_frames = path + 'frames/'
+path_to_raw_frames = path_to_frames + 'raw/'
+path_to_processed_frames = path_to_frames + 'processed/'
 percentage_to_pick = 0.05
 
 #TODO document functions 
@@ -32,7 +34,7 @@ def extract_frames(f):
         ret, frame = cap.read()
         if ret == False:
             break
-        cv2.imwrite(path_to_frames + get_filename(f)+str(i)+'.jpg',frame)
+        cv2.imwrite(path_to_raw_frames + get_filename(f)+str(i)+'.jpg',frame)
         i+=1
 
     cap.release()
@@ -79,17 +81,35 @@ def validate_file_extension(value):
     if not ext.lower() in valid_extensions:
         raise ValidationError('Unsupported file extension.')
 
-def edsr_model(image):
+def edsr_model(image_path):
     import cv2
     from cv2 import dnn_superres
 
     sr = dnn_superres.DnnSuperResImpl_create()
     path = 'video/static/models/EDSR_x3.pb'# ... /path/to/EDSR_x3.pb
+    image = cv2.imread(image_path)
     sr.readModel(path)
     sr.setModel("edsr", 3)
     result = sr.upsample(image)
-    cv2.imwrite('path', result)# falta guardar en una ruta diferente a la de los frames 
+    cv2.imwrite(path_to_processed_frames, result)# falta guardar en una ruta diferente a la de los frames 
     
+def copy_files(file_list):
+    from shutil import copy as cp
+
+    for image_path in file_list:
+        cp(image_path, path_to_processed_frames)
+
+def apply_superresolution(filename):
+    import os
+
+    picked_frames = pick_frames(filename)
+    copy_files(picked_frames)
+
+    for image in os.listdir(path_to_processed_frames):
+        #filename = os.fsdecode(image)
+        print(image)
+        edsr_model(path_to_processed_frames+image)
+
 def clean_up():
     """
     TODO handle clean up after finishing the processing:
@@ -101,24 +121,26 @@ def pick_frames(name):
     import os
     from pathlib import Path
     from math import ceil
+    import random
 
-    frame_number = len(os.listdir(path_to_frames))
+    frame_number = len(os.listdir(path_to_raw_frames))
     frames_to_be_picked = ceil(frame_number * percentage_to_pick)
 
     random_list = random.sample(range(0, frame_number), frames_to_be_picked)
-    picked_frames = [path_to_frames + name + random_number + '.jpg' for random_number in random_list]
+    picked_frames = [path_to_raw_frames + name[0:name.index('.')] + str(random_number) + '.jpg' for random_number in random_list]
     
     return picked_frames
 
-def get_plate_openalpr(image_name):
+def get_plate_openalpr(file):
     import subprocess
-    cmd = ['docker', 'run', '-i', '--rm', '-v', path_to_frames+":/data:ro", 'openalpr', '-c',
+    cmd = ['docker', 'run', '-i', '--rm', '-v', path_to_processed_frames+":/data:ro", 'openalpr', '-c',
            'eu', image_name]
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     lines = b''
     for line in p.stdout.readlines():
         lines = lines + line
     retval = p.wait()
+
     print(lines.decode('utf-8').strip())
 
 def get_plate_platerecognizer(image_path):
