@@ -82,7 +82,7 @@ def validate_file_extension(value):
         raise ValidationError('Unsupported file extension.')
 
 def edsr_model(image_path):
-    import cv2
+    """import cv2
     from cv2 import dnn_superres
 
     sr = dnn_superres.DnnSuperResImpl_create()
@@ -92,7 +92,30 @@ def edsr_model(image_path):
     sr.setModel("edsr", 3)
     result = sr.upsample(image)
     cv2.imwrite(path_to_processed_frames, result)# falta guardar en una ruta diferente a la de los frames 
-    
+    """
+    import cv2
+    from cv2 import dnn_superres
+
+    # Create an SR object
+    sr = dnn_superres.DnnSuperResImpl_create()
+
+    print(image_path)
+    # Read image
+    image = cv2.imread(image_path)
+
+    # Read the desired model
+    path = "video/static/models/EDSR_x3.pb"
+    sr.readModel(path)
+
+    # Set the desired model and scale to get correct pre- and post-processing
+    sr.setModel("edsr", 3)
+
+    # Upscale the image
+    result = sr.upsample(image)
+
+    # Save the image
+    cv2.imwrite(image_path, result)
+
 def copy_files(file_list):
     from shutil import copy as cp
 
@@ -106,7 +129,8 @@ def apply_superresolution(filename):
     copy_files(picked_frames)
 
     for image in os.listdir(path_to_processed_frames):
-        #filename = os.fsdecode(image)
+        if image.index('.') == 0:
+            continue
         print(image)
         edsr_model(path_to_processed_frames+image)
 
@@ -123,7 +147,7 @@ def pick_frames(name):
     from math import ceil
     import random
 
-    frame_number = len(os.listdir(path_to_raw_frames))
+    frame_number = len(os.listdir(path_to_raw_frames)) - 1
     frames_to_be_picked = ceil(frame_number * percentage_to_pick)
 
     random_list = random.sample(range(0, frame_number), frames_to_be_picked)
