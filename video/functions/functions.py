@@ -155,7 +155,7 @@ def pick_frames(name):
     
     return picked_frames
 
-def get_plate_openalpr(file):
+def get_plate_openalpr(image_name):
     import subprocess
     cmd = ['docker', 'run', '-i', '--rm', '-v', path_to_processed_frames+":/data:ro", 'openalpr', '-c',
            'eu', image_name]
