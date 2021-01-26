@@ -157,15 +157,39 @@ def pick_frames(name):
 
 def get_plate_openalpr(image_name):
     import subprocess
-    cmd = ['docker', 'run', '-i', '--rm', '-v', path_to_processed_frames+":/data:ro", 'openalpr', '-c',
-           'eu', image_name]
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    lines = b''
-    for line in p.stdout.readlines():
-        lines = lines + line
-    retval = p.wait()
+    from os import linesep
+    import re
 
-    print(lines.decode('utf-8').strip())
+    cmd = ['docker', 'run', '-i', '--rm', '-v', path_to_processed_frames+":/data:ro", 'openalpr', '-c',
+            'eu', image_name]
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    lines_bytes = b''
+    for line in p.stdout.readlines():
+        lines_bytes = lines_bytes + line
+    retval = p.wait()
+    lines = lines_bytes.decode('utf-8').strip()
+    results = []
+
+    x = re.split('plate\d+: \d+ results',  lines)
+
+    result_object_list = []
+
+    for plate in x:
+        if not plate:
+            continue
+        plate_lines = plate.strip().split('\n')
+        result_list = []
+        for placeholder in plate_lines:
+            if not placeholder:
+                continue
+            matcher = re.search(r'\s{0,4}-\s(\w+)\s+confidence:\s([0-9]*[.,]{0,1}[0-9]*)',placeholder)
+            tuple_matcher = matcher.group(1,2)
+            result_list.append(tuple_matcher)
+        matcher_object = Result(image_name, result_list)
+        result_object_list.append(matcher_object)
+
+    return result_object_list
+
 
 def get_plate_platerecognizer(image_path):
     import requests
