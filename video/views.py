@@ -1,5 +1,6 @@
 from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.core import serializers
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from video.forms import upload
 from video.functions.functions import handle_uploaded_file, extract_frames, apply_superresolution
 
@@ -17,7 +18,9 @@ def formsubmission(request):
 
             extract_frames(uploaded_file)
             apply_superresolution(uploaded_file.name)
-            return HttpResponse("Archivo cargado exitosamente!")
+            response = placeholder()
+
+            return JsonResponse(serializers.serialize('json', response))
         else:
             form = upload()
     return render(request, 'video/home.html', {'form': form})

@@ -82,17 +82,6 @@ def validate_file_extension(value):
         raise ValidationError('Unsupported file extension.')
 
 def edsr_model(image_path):
-    """import cv2
-    from cv2 import dnn_superres
-
-    sr = dnn_superres.DnnSuperResImpl_create()
-    path = 'video/static/models/EDSR_x3.pb'# ... /path/to/EDSR_x3.pb
-    image = cv2.imread(image_path)
-    sr.readModel(path)
-    sr.setModel("edsr", 3)
-    result = sr.upsample(image)
-    cv2.imwrite(path_to_processed_frames, result)# falta guardar en una ruta diferente a la de los frames 
-    """
     import cv2
     from cv2 import dnn_superres
 
@@ -155,6 +144,26 @@ def pick_frames(name):
     
     return picked_frames
 
+def placeholder():
+    import os
+    import Result
+
+    results_per_frame = []
+
+    for image in os.listdir(path_to_processed_frames):
+        if image.index('.') == 0:
+            continue
+
+        frame_result = Result(image, get_plate_openalpr(image))
+        results_per_frame.append(frame_result)
+
+    #result = get_statistics(results_per_frame)
+
+    return results_per_frame
+
+#def get_statistics(results):
+    
+
 def get_plate_openalpr(image_name):
     import subprocess
     from os import linesep
@@ -166,27 +175,29 @@ def get_plate_openalpr(image_name):
     lines_bytes = b''
     for line in p.stdout.readlines():
         lines_bytes = lines_bytes + line
+    
     retval = p.wait()
     lines = lines_bytes.decode('utf-8').strip()
-    results = []
 
-    x = re.split('plate\d+: \d+ results',  lines)
+    plates = re.split('plate\d+: \d+ results',  lines)
 
     result_object_list = []
 
-    for plate in x:
+    for plate in plates:
         if not plate:
             continue
-        plate_lines = plate.strip().split('\n')
+        
+        candidates = plate.strip().split('\n')
         result_list = []
-        for placeholder in plate_lines:
-            if not placeholder:
+        for candidate in candidates:
+            if not candidate:
                 continue
-            matcher = re.search(r'\s{0,4}-\s(\w+)\s+confidence:\s([0-9]*[.,]{0,1}[0-9]*)',placeholder)
+            
+            matcher = re.search(r'\s{0,4}-\s(\w+)\s+confidence:\s([0-9]*[.,]{0,1}[0-9]*)',candidate)
             tuple_matcher = matcher.group(1,2)
             result_list.append(tuple_matcher)
-        matcher_object = Result(image_name, result_list)
-        result_object_list.append(matcher_object)
+        
+        result_object_list.append(result_list)
 
     return result_object_list
 
