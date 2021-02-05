@@ -156,7 +156,7 @@ def pick_frames(name):
     
     return picked_frames
 
-def placeholder():
+def get_result_list():
     import os
     #import Result
 
@@ -173,14 +173,16 @@ def placeholder():
 
     return results_per_frame
 
-#def get_statistics(results):
-    
+def get_statistics(result_list):
+    """TODO pending"""
 
 def get_plate_openalpr(image_name):
     import subprocess
     from os import linesep
     import re
+    import json
     global current_directory
+
     if current_directory is None:
         cd = ['echo', '%cd%']
         p_cd = subprocess.Popen(cd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -201,10 +203,23 @@ def get_plate_openalpr(image_name):
     
     retval = p.wait()
     lines = lines_bytes.decode('utf-8').strip()
-    print(lines)
+    #print(lines)
+    recognized_plates = json.loads(lines)["results"]
     # plates = re.split('plate\d+: \d+ results',  lines)
 
     result_object_list = []
+
+    for recognized_plate in recognized_plates:
+        print(image_name)
+        if(len(recognized_plate) > 0):
+            candidates = recognized_plate["candidates"]
+            for candidate in candidates:
+                candidate.pop("matches_template", None)
+                result_object_list.append(candidate)
+
+            #print(result_object_list)
+        #else: 
+            #print("[]")
     """
     for plate in plates:
         if not plate:

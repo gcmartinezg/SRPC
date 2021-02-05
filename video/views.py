@@ -2,7 +2,12 @@ from django.shortcuts import render
 from django.core import serializers
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from video.forms import upload
-from video.functions.functions import handle_uploaded_file, extract_frames, apply_superresolution, placeholder
+from video.functions.functions import handle_uploaded_file, extract_frames, apply_superresolution, get_result_list
+from json import JSONEncoder, dumps
+
+class CustomEncoder(JSONEncoder):
+    def default(self, o):
+            return o.__dict__
 
 # Create your views here.
 def formsubmission(request):
@@ -18,10 +23,10 @@ def formsubmission(request):
 
             extract_frames(uploaded_file)
             apply_superresolution(uploaded_file.name)"""
-            response = placeholder()
+            response = get_result_list()
 
-            #return JsonResponse(serializers.serialize('json', response))
-            return HttpResponse('xd')
+            return HttpResponse(dumps(response, cls=CustomEncoder), 'application/json')
+            #return HttpResponse('xd')
         else:
             form = upload()
     return render(request, 'video/home.html', {'form': form})
