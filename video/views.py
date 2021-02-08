@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.core import serializers
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from video.forms import upload
-from video.functions.functions import handle_uploaded_file, extract_frames, apply_superresolution, get_result_list
+from video.functions.functions import handle_uploaded_file, extract_frames, apply_superresolution, get_result_list, get_statistics
 from json import JSONEncoder, dumps
 
 class CustomEncoder(JSONEncoder):
@@ -23,7 +23,8 @@ def formsubmission(request):
 
             extract_frames(uploaded_file)
             apply_superresolution(uploaded_file.name)"""
-            response = get_result_list()
+            result_list = get_result_list()
+            response = get_statistics(result_list)
 
             return HttpResponse(dumps(response, cls=CustomEncoder), 'application/json')
             #return HttpResponse('xd')

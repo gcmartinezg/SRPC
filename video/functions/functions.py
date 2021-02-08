@@ -17,6 +17,37 @@ class Result:
     def __repr__(self):
         return f'Result(image_name = {self.image_name}, results_list = {self.results_list})'
 
+class Statistics:
+    def __init__(self, plate: str, confidence: float = 0):
+        self.plate = plate
+        self.top_plate = (plate, confidence)
+        self.confidences = [confidence]
+        self.calculate_average()
+
+    def add(self, incoming_plate: dict):
+        self.get_new_possible_plate(incoming_plate)
+        self.confidences.append(incoming_plate['confidence'])
+        self.calculate_average()
+
+    def get_new_possible_plate(self, incoming_plate: dict):
+        if self.plate is None or len(self.plate) == 0:
+            self.plate = incoming_plate['plate']
+            self.top_plate = tuple(incoming_plate.values())
+
+        else:
+            if self.top_plate[1] < incoming_plate['confidence']:
+                self.plate = incoming_plate['plate']
+                self.top_plate = tuple(incoming_plate.values())
+
+    def calculate_average(self):
+        self.average = sum(self.confidences)/len(self.confidences)
+
+    def __str__(self):
+        return f'Statistics(plate = {self.plate}, average = {self.average})'
+
+    def __repr__(self):
+        return f'Statistics(plate = {self.plate}, top_plate = {self.top_plate}, confidences = {self.confidences}, average = {self.average})'
+
 #TODO document functions 
 def handle_uploaded_file(f):
     save_uploaded_file(f)
@@ -52,14 +83,14 @@ def extract_frames(f):
     cap.release()
     cv2.destroyAllWindows()
 
-def get_filename(f):
+def get_filename(f) -> str:
     try:
         return f.name[0:(f.name.index('.'))]
     except ValueError:
         #let's hope this never happen
         return ''
 
-def validate_video(f):
+def validate_video(f) -> bool:
     import moviepy.editor
     from pathlib import Path
 
@@ -132,7 +163,7 @@ def apply_superresolution(filename):
     for image in os.listdir(path_to_processed_frames):
         if image.index('.') == 0:
             continue
-        print(image)
+        #print(image)
         edsr_model(path_to_processed_frames+image)
 
 def clean_up():
@@ -142,7 +173,7 @@ def clean_up():
     Removing the root's contents of the uploads folder
     """
 
-def pick_frames(name):
+def pick_frames(name) -> list:
     import os
     from pathlib import Path
     from math import ceil
@@ -156,7 +187,7 @@ def pick_frames(name):
     
     return picked_frames
 
-def get_result_list():
+def get_result_list() -> list:
     import os
     #import Result
 
@@ -173,10 +204,94 @@ def get_result_list():
 
     return results_per_frame
 
-def get_statistics(result_list):
-    """TODO pending"""
+# taken from https://gist.github.com/badocelot/5327427
+def damerau_levenshtein_distance_improved(a: str, b: str) -> int:
+    # "Infinity" -- greater than maximum possible edit distance
+    # Used to prevent transpositions for first characters
+    INF = len(a) + len(b)
 
-def get_plate_openalpr(image_name):
+    # Matrix: (M + 2) x (N + 2)
+    matrix  = [[INF for n in range(len(b) + 2)]]
+    matrix += [[INF] + list(range(len(b) + 1))]
+    matrix += [[INF, m] + [0] * len(b) for m in range(1, len(a) + 1)]
+
+    # Holds last row each element was encountered: DA in the Wikipedia pseudocode
+    last_row = {}
+
+    # Fill in costs
+    for row in range(1, len(a) + 1):
+        # Current character in a
+        ch_a = a[row-1]
+
+        # Column of last match on this row: DB in pseudocode
+        last_match_col = 0
+
+        for col in range(1, len(b) + 1):
+            # Current character in b
+            ch_b = b[col-1]
+
+            # Last row with matching character
+            last_matching_row = last_row.get(ch_b, 0)
+
+            # Cost of substitution
+            cost = 0 if ch_a == ch_b else 1
+
+            # Compute substring distance
+            matrix[row+1][col+1] = min(
+                matrix[row][col] + cost, # Substitution
+                matrix[row+1][col] + 1,  # Addition
+                matrix[row][col+1] + 1,  # Deletion
+
+                # Transposition
+                # Start by reverting to cost before transposition
+                matrix[last_matching_row][last_match_col]
+                    # Cost of letters between transposed letters
+                    # 1 addition + 1 deletion = 1 substitution
+                    + max((row - last_matching_row - 1),
+                          (col - last_match_col - 1))
+                    # Cost of the transposition itself
+                    + 1)
+
+            # If there was a match, update last_match_col
+            if cost == 0:
+                last_match_col = col
+
+        # Update last row for current character
+        last_row[ch_a] = row
+
+    # Return last element
+    return matrix[-1][-1]
+
+def get_statistics(result_list: list):
+    """TODO pending"""
+    unique_plates = []
+    for frame_result in result_list:
+        candidates = frame_result['results_list']
+        if candidates is not None and len(candidates) > 0:
+            """dictionaries keep the insertion order from python 3.6+. openalpr returns an ordered list, 
+            so the most possible plate always should be the first one."""
+            candidate = candidates[0]
+            print('candidate', candidate)
+            if len(unique_plates) == 0:
+                #print('first insert')
+                unique_plates.append(Statistics(candidate['plate'], candidate['confidence']))
+
+            else:
+                for index, unique_plate in enumerate(unique_plates):
+                    #print('distance', unique_plate.plate, 'and', candidate['plate'], '=', damerau_levenshtein_distance_improved(unique_plate.plate, candidate['plate']))
+                    if damerau_levenshtein_distance_improved(unique_plate.plate, candidate['plate']) < 3:
+                        print('perhaps same')
+                        unique_plates[index].add(candidate)
+
+                    else:
+                        print('most likely different')
+                        unique_plates.append(Statistics(candidate['plate'], candidate['confidence']))
+
+                    print(unique_plates)
+
+    return unique_plates
+
+def get_plate_openalpr(image_name: str) -> list:
     import subprocess
     from os import linesep
     import re
