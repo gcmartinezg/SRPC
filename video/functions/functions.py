@@ -277,17 +277,20 @@ def get_statistics(result_list: list):
                 unique_plates.append(Statistics(candidate['plate'], candidate['confidence']))
 
             else:
+                present = False
                 for index, unique_plate in enumerate(unique_plates):
                     #print('distance', unique_plate.plate, 'and', candidate['plate'], '=', damerau_levenshtein_distance_improved(unique_plate.plate, candidate['plate']))
                     if damerau_levenshtein_distance_improved(unique_plate.plate, candidate['plate']) < 3:
                         print('perhaps same')
                         unique_plates[index].add(candidate)
+                        present = True
+                        break
 
-                    else:
-                        print('most likely different')
-                        unique_plates.append(Statistics(candidate['plate'], candidate['confidence']))
+                if not present:
+                    print('most likely different')
+                    unique_plates.append(Statistics(candidate['plate'], candidate['confidence']))
 
-                    print(unique_plates)
+                    #print(unique_plates)
 
     return unique_plates
 
