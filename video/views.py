@@ -15,14 +15,14 @@ def formsubmission(request):
     if request.method == "POST":
         form = upload(request.POST, request.FILES)
         if form.is_valid():
-            """uploaded_file = request.FILES['file']
+            uploaded_file = request.FILES['file']
             try:
                 handle_uploaded_file(uploaded_file)
             except ValueError as err:
                 return HttpResponseBadRequest(str(err))
 
             extract_frames(uploaded_file)
-            apply_superresolution(uploaded_file.name)"""
+            apply_superresolution(uploaded_file.name)
             result_list = get_result_list()
             response = get_statistics(result_list)
 

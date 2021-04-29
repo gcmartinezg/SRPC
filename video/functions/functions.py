@@ -262,7 +262,7 @@ def damerau_levenshtein_distance_improved(a: str, b: str) -> int:
     # Return last element
     return matrix[-1][-1]
 
-def get_statistics(result_list: list):
+def get_statistics(result_list: list) -> list:
     """TODO pending"""
     unique_plates = []
     for frame_result in result_list:
