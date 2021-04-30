@@ -266,7 +266,7 @@ def get_statistics(result_list: list) -> list:
     """TODO pending"""
     unique_plates = []
     for frame_result in result_list:
-        candidates = frame_result['results_list']
+        candidates = frame_result.results_list
         if candidates is not None and len(candidates) > 0:
             """dictionaries keep the insertion order from python 3.6+. openalpr returns an ordered list, 
             so the most possible plate always should be the first one."""
